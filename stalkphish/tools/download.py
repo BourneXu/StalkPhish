@@ -252,15 +252,20 @@ def RetriveIndexPath(url, proxies, headers, urllist=[]):
 		pass
 	else:
 		soup = BeautifulSoup(r.text, 'html.parser')
-		if 'Index of' in soup.title.text:
-			# Could be tracked
-			res = soup.select('a')
-			urllist += [url + x['href'] for x in res if '.zip' in x.text]
-			urllist += [domin + x['href'] for x in res if '.zip' in x.text]
-			folderlist = [url + x['href'] for x in res if (x['href'][-1] == '/') and (x.text != 'Parent Directory')]
-			if len(folderlist) > 0:
-				for folderUrl in folderlist:
-					urllist = RetriveIndexPath(folderUrl, proxies, headers, urllist)
+		try:
+			title = soup.title.text
+		except:
+			pass
+		else:
+			if 'Index of' in title:
+				# Could be tracked
+				res = soup.select('a')
+				urllist += [url + x['href'] for x in res if '.zip' in x.text]
+				urllist += [domin + x['href'] for x in res if '.zip' in x.text]
+				folderlist = [url + x['href'] for x in res if (x['href'][-1] == '/') and (x.text != 'Parent Directory')]
+				if len(folderlist) > 0:
+					for folderUrl in folderlist:
+						urllist = RetriveIndexPath(folderUrl, proxies, headers, urllist)
 	return list(set(urllist))
 
 
