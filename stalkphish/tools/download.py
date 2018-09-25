@@ -101,13 +101,14 @@ def TryPKDownload(siteURL,siteDomain,IPaddress,TABLEname,InvTABLEname,DLDir,SQL,
 			# Try to retrieve all possible path for one url and find whether there are .zip files
 			try:
 				if len(ziplist) >= 1:
-					for url in ziplist:
+					for url in [pathl] + ziplist:
 						if redis_set.sismember('StalkPhishURLs', url):
 							continue
 						LOG.info("Retrieving Path "+ url)
 						urllist = RetriveIndexPath(url, proxies, user_agent, [])
-						redis_set.sadd('StalkPhishURLs', *urllist, url)
 						for urlzip in urllist:
+							if redis_set.sismember('StalkPhishURLs', urlzip):
+								continue
 							LOG.info("trying "+ urlzip)
 							rz = requests.get(urlzip, headers=user_agent, proxies=proxies, allow_redirects=True, timeout=(5,12), verify=False)
 							if str(rz.status_code) != "404":
@@ -119,7 +120,6 @@ def TryPKDownload(siteURL,siteDomain,IPaddress,TABLEname,InvTABLEname,DLDir,SQL,
 										# Still collected file
 										if os.path.exists(savefile):
 											LOG.info("[DL ] Found still collected archive: "+savefile)
-											return
 										# New file to download
 										else:
 											LOG.info("[DL ] Found archive, downloaded it as: "+savefile)
@@ -129,7 +129,6 @@ def TryPKDownload(siteURL,siteDomain,IPaddress,TABLEname,InvTABLEname,DLDir,SQL,
 											ZipFileName = str(zzip)
 											ZipFileHash = SHA.hashFile(savefile)
 											SQL.SQLiteInvestigUpdatePK(InvTABLEname,siteURL,ZipFileName,ZipFileHash,now,lastHTTPcode)
-											return
 									else:
 										pass
 								except requests.exceptions.ContentDecodingError:
@@ -139,6 +138,7 @@ def TryPKDownload(siteURL,siteDomain,IPaddress,TABLEname,InvTABLEname,DLDir,SQL,
 								# 404
 							else:
 								pass
+						redis_set.sadd('StalkPhishURLs', *urllist, url)
 			except:
 				err = sys.exc_info()
 				LOG.error("DL Error: " + str(err))
@@ -164,7 +164,6 @@ def TryPKDownload(siteURL,siteDomain,IPaddress,TABLEname,InvTABLEname,DLDir,SQL,
 											# Still collected file
 											if os.path.exists(savefile):
 												LOG.info("[DL ] Found still collected archive: "+savefile)
-												return
 											# New file to download
 											else:
 												LOG.info("[DL ] Found archive, downloaded it as: "+savefile)
@@ -174,7 +173,6 @@ def TryPKDownload(siteURL,siteDomain,IPaddress,TABLEname,InvTABLEname,DLDir,SQL,
 												ZipFileName = str(zzip+'.zip')
 												ZipFileHash = SHA.hashFile(savefile)
 												SQL.SQLiteInvestigUpdatePK(InvTABLEname,siteURL,ZipFileName,ZipFileHash,now,lastHTTPcode)
-												return
 										else:
 											pass
 									except requests.exceptions.ContentDecodingError:
