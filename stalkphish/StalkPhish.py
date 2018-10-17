@@ -61,6 +61,7 @@ def usage():
 	-G --get 		Try to download zip file containing phishing kit sources (long and noisy)
 	-N --nosint 		Don't use OSINT databases
 	-u --url 		Add only one URL
+	-f --file 		Add urls from file (.csv)
 	"""
 	print(usage)
 	sys.exit(0)
@@ -72,6 +73,8 @@ def args_parse():
 	global OSINTsources
 	global UniqueURL
 	global URLadd
+	global ReadCSV
+	global csvFile
 	confound="NO"
 	DLPhishingKit="NO"
 	OSINTsources = "YES"
@@ -81,7 +84,7 @@ def args_parse():
 	if not len(sys.argv[1:]):
 		usage()
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], "hNGc:u:", ["help", "nosint", "get", "conf=", "url="])
+		opts, args = getopt.getopt(sys.argv[1:], "hNGc:u:f:", ["help", "nosint", "get", "conf=", "url=", "file="])
 	except getopt.GetoptError as err:
 		print(err)
 		usage()
@@ -108,6 +111,9 @@ def args_parse():
 		elif o in ("-u", "--url"):
 			UniqueURL = "YES"
 			URLadd = a
+		elif o in ("-f", "--file"):
+			ReadCSV = "YES"
+			csvFile = a
 		else:
 			assert False, "Unhandled Option"
 	return
@@ -326,6 +332,8 @@ def ConfAnalysis(ConfFile):
 		
 		# Connection stuff
 		PROXY = CONF.http_proxy
+		if PROXY == 'None':
+			PROXY = None
 		UA = CONF.http_UA
 		UAFILE = CONF.UAfile
 
@@ -365,21 +373,34 @@ def main():
 		LOG.info("Declared Proxy: "+str(PROXY)+"\n")
 		
 		# Test proxy connection
-		proxystring = PROXY.split('//')[1]
-		proxyipadd = proxystring.split(':')[0]
-		proxyport = proxystring.split(':')[1]
-		s = socket.socket()
-		try:
-			s.connect((proxyipadd, int(proxyport)))
-		except:
-			LOG.error("Proxy connection error, exiting!")
-			sys.exit(10)
+		if PROXY:
+			proxystring = PROXY.split('//')[1]
+			proxyipadd = proxystring.split(':')[0]
+			proxyport = proxystring.split(':')[1]
+			s = socket.socket()
+			try:
+				s.connect((proxyipadd, int(proxyport)))
+			except:
+				LOG.error("Proxy connection error, exiting!")
+				sys.exit(10)
 
 		# Only add URL into Database
 		if UniqueURL is "YES":
 			LOG.info("Add URL into database: {}".format(URLadd))
 			AddUniqueURL(URLadd,LOG,SQL,TABLEname,PROXY,UAFILE)
 			sys.stdout.flush()
+			os._exit(0)
+		else:
+			pass
+
+		if ReadCSV is "YES":
+			LOG.info("Add URLs from file into database: {}\n".format(csvFile))
+			import pandas as pd 
+			urlsinFile = pd.read_csv(csvFile, header=None)[0].values
+			for url in urlsinFile:
+				LOG.info("Add URL into database: {}".format(url))
+				AddUniqueURL(url,LOG,SQL,TABLEname,PROXY,UAFILE)
+				sys.stdout.flush()
 			os._exit(0)
 		else:
 			pass
