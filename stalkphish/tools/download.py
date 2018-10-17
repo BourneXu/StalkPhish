@@ -143,6 +143,20 @@ def TryPKDownload(siteURL,siteDomain,IPaddress,TABLEname,InvTABLEname,DLDir,SQL,
 				err = sys.exc_info()
 				LOG.error("DL Error: " + str(err))
 
+			# Add popular Kit names into ziplist
+			try:
+				import pandas as pd 
+				perct = 0.1
+				topNames = pd.read_csv('/home/chaoxu18/StalkPhish/stalkphish/ExtracKitNameCount.csv')
+				topNamesNum = round(perct * len(topNames))
+				if topNamesNum > 0:
+					topNames = topNames['kitname'].values[:topNamesNum]
+					for topname in topNames:
+						ziplist.append(siteURL + '/' + topname + '.zip')
+			except:
+				LOG.error("Top Kit Name Error: " + str(err))
+				pass
+
 			try:
 				# Try too find and download phishing kit archive (.zip)
 				if len(ziplist) >= 1:
@@ -243,7 +257,7 @@ def TryPKDownload(siteURL,siteDomain,IPaddress,TABLEname,InvTABLEname,DLDir,SQL,
 
 
 def RetriveIndexPath(url, proxies, headers, urllist=[]):
-	domin = '/'.join(url.split('/')[0:3])
+	domain = '/'.join(url.split('/')[0:3])
 	try:
 		r = requests.get(url, proxies=proxies, headers=headers, allow_redirects=True, timeout=(5,12), verify=False)
 	except:
@@ -259,7 +273,7 @@ def RetriveIndexPath(url, proxies, headers, urllist=[]):
 				# Could be tracked
 				res = soup.select('a')
 				urllist += [url + x['href'] for x in res if '.zip' in x.text]
-				urllist += [domin + x['href'] for x in res if '.zip' in x.text]
+				urllist += [domain + x['href'] for x in res if '.zip' in x.text]
 				folderlist = [url + x['href'] for x in res if (x['href'][-1] == '/') and (x.text != 'Parent Directory')]
 				if len(folderlist) > 0:
 					for folderUrl in folderlist:
