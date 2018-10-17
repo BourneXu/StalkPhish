@@ -56,6 +56,7 @@ $ ./StalkPhish.py -h
     -G --get        Try to download zip file containing phishing kit sources (long and noisy)
     -N --nosint     Don't use OSINT databases
     -u --url        Add only one URL
+    -f --file       Add urls from a csv file
 ~~~
 
 ## Basic usage
